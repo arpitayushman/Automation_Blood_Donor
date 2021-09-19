@@ -1,4 +1,9 @@
 const puppeteer = require("puppeteer");
+// const allUsers = require('./sample.json');
+// const fs = require('fs');
+// const app = require('express')();
+// var json2xls = require('json2xls');
+// const excelFileName = 'sample.xlsx';
 const fs = require('fs');
 const path = require('path');
 let xlsx = require("xlsx");
@@ -41,17 +46,17 @@ let FolderNAME = (mainCity+"_"+firstNearCity+"_"+secondNearCity);
         }
         await page.click('body > div.container > div:nth-child(1) > form > div:nth-child(4) > select');
         console.log("Getting info");
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(500);
         for (let i = 0; i < bloodGroup.length; i++) {
             await page.keyboard.press(bloodGroup[i]);
         }
         console.log("Please wait while we get the data");
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(500);
         await page.click('.btn.btn-primary.btn-block.btn-flat');
         await page.waitForSelector("body > div.container > div:nth-child(3) > div.box.center > ul > li:nth-child(3) > a");
         let rowList = await page.$$(".container .col-md-12 .col-md-12");
         console.log("Almost there!!");
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(500);
         console.log("Total availabe donors: ", rowList.length);
 
         //body > div.container > div:nth-child(3) > div:nth-child(1) > div > div:nth-child(1)
@@ -75,40 +80,61 @@ let FolderNAME = (mainCity+"_"+firstNearCity+"_"+secondNearCity);
             } else {
                 secondNumberArr.push(firstNumber);
             }
-        //     console.log("Waiting");
-        // await page.waitForTimeout(2000);
+            await page.waitForTimeout(500)
+            //     console.log("Waiting");
+            // await page.waitForTimeout(2000);
         }
     }
     // console.log(`Name  BloodGroup  Location  Mob.No  PhoneNo`)
-    // for(let l = 0;l<nameArr.length;l++){
-
-        // }
+    for(let i = 0;i<nameArr.length;i++){
+        console.log(`${nameArr[i]}  ${bloodGroupArr[i]}  ${placeArr[i]}  ${firstNumberArr[i]}   ${secondNumberArr[i]}`)
+        
+        }
         // console.table(placeArr);
         
-        let aoa = [[],[],[],[],[]];
-        aoa.push(nameArr);
-        aoa.push(bloodGroupArr);
-        aoa.push(placeArr);
-        aoa.push(firstNumberArr);
-        aoa.push(secondNumberArr);
+        // let aoa = [];
+        
+        let a=[];
+        for (let j = 0; j < nameArr.length; j++) {
+            let aoa = { "Name": '', "Blood Group": '', "Location": '', "Mobile Number": '', "Alternate Number": ''};
+            aoa["Name"] = nameArr[j];
+            aoa["Blood Group"] = bloodGroupArr[j];
+            aoa["Location"] = placeArr[j];
+            aoa["Mobile Number"] = firstNumberArr[j];
+            aoa["Alternate Number"] = secondNumberArr[j];
+            a.push(aoa);
+        }
         // for(let tab=0;tab<aoa.length;tab++){
         //     for(let l=0;l<nameArr.length;l++){
 
-        //         console.log(`${nameArr[l]}  ${bloodGroupArr[l]}  ${placeArr[l]}  ${firstNumberArr[l]}   ${secondNumberArr[l]}`)
         //     }
         // }
         let folderpath = path.join(__dirname, FolderNAME);
         dirCreator(folderpath);
-        let filePath = path.join(folderpath,FolderNAME+".pdf");
-        let text = JSON.stringify(aoa);
-        let pdfDoc = new pdfkit();
-        pdfDoc.pipe(fs.createWriteStream(filePath));
-        pdfDoc.text(text);
-        pdfDoc.end();
-
+        let filePath = path.join(folderpath,FolderNAME+".json");
+        fs.writeFile(filePath, JSON.stringify(a), err => err ? console.log(err): null);
+        let excelFilePath = path.join(folderpath, FolderNAME+".xlsx");
+        excelWriter(excelFilePath,a,mainCity);
+        // let text = JSON.stringify(aoa);
+        // let pdfDoc = new pdfkit();
+        // pdfDoc.pipe(fs.createWriteStream(filePath));
+        // pdfDoc.text(text);
+        // pdfDoc.end();
+        //convert.js
+        console.log("Please find the file in "+FolderNAME+" folder");
+        await browser.close();
 })();
 function dirCreator(folderpath){
     if(fs.existsSync(folderpath)==false){
         fs.mkdirSync(folderpath);
     }
 } 
+function excelWriter(filePath, json, sheetName) {
+    // workbook create
+    let newWB = xlsx.utils.book_new();
+    // worksheet
+    let newWS = xlsx.utils.json_to_sheet(json);
+    xlsx.utils.book_append_sheet(newWB, newWS, sheetName);
+    // excel file create 
+    xlsx.writeFile(newWB, filePath);
+}
