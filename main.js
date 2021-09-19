@@ -1,10 +1,15 @@
 const puppeteer = require("puppeteer");
+const fs = require('fs');
+const path = require('path');
+let xlsx = require("xlsx");
+// const { dirname } = require("path/posix");
+const pdfkit = require('pdfkit');
 let page;
 let mainCity = "New Delhi";
 let firstNearCity = "Gurgaon"
 let secondNearCity = "Faridabad";
 let bloodGroup = "O+";
-let citiesArr = { mainCity, firstNearCity, secondNearCity };
+let FolderNAME = (mainCity+"_"+firstNearCity+"_"+secondNearCity);
 (async function fn() {
     let browser = await puppeteer.launch({
         headless: false, defaultViewport: null,
@@ -22,12 +27,12 @@ let citiesArr = { mainCity, firstNearCity, secondNearCity };
     let t = 3;
     for (let k = 1; k <= 3; k++) {
         if (k == 1) {
-            cityName = "New Delhi";
+            cityName = mainCity;
         }
         if (k == 2) {
-            cityName = "Gurgaon";
+            cityName = firstNearCity;
         } if(k==3){
-            cityName = "Faridabad";
+            cityName = secondNearCity;
         }
         await page.click('body > div.container > div:nth-child(1) > form > div.col-md-4 > select');
         console.log("Getting Data for ", cityName);
@@ -74,10 +79,36 @@ let citiesArr = { mainCity, firstNearCity, secondNearCity };
         // await page.waitForTimeout(2000);
         }
     }
-    console.log(`Name  BloodGroup  Location  Mob.No  PhoneNo`)
-    for(let l = 0;l<nameArr.length;l++){
+    // console.log(`Name  BloodGroup  Location  Mob.No  PhoneNo`)
+    // for(let l = 0;l<nameArr.length;l++){
 
-        console.log(`${nameArr[l]}  ${bloodGroupArr[l]}  ${placeArr[l]}  ${firstNumberArr[l]}   ${secondNumberArr[l]}`)
-    }
-    // console.table(placeArr);
+        // }
+        // console.table(placeArr);
+        
+        let aoa = [[],[],[],[],[]];
+        aoa.push(nameArr);
+        aoa.push(bloodGroupArr);
+        aoa.push(placeArr);
+        aoa.push(firstNumberArr);
+        aoa.push(secondNumberArr);
+        // for(let tab=0;tab<aoa.length;tab++){
+        //     for(let l=0;l<nameArr.length;l++){
+
+        //         console.log(`${nameArr[l]}  ${bloodGroupArr[l]}  ${placeArr[l]}  ${firstNumberArr[l]}   ${secondNumberArr[l]}`)
+        //     }
+        // }
+        let folderpath = path.join(__dirname, FolderNAME);
+        dirCreator(folderpath);
+        let filePath = path.join(folderpath,FolderNAME+".pdf");
+        let text = JSON.stringify(aoa);
+        let pdfDoc = new pdfkit();
+        pdfDoc.pipe(fs.createWriteStream(filePath));
+        pdfDoc.text(text);
+        pdfDoc.end();
+
 })();
+function dirCreator(folderpath){
+    if(fs.existsSync(folderpath)==false){
+        fs.mkdirSync(folderpath);
+    }
+} 
