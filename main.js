@@ -1,26 +1,22 @@
 const puppeteer = require("puppeteer");
-// const allUsers = require('./sample.json');
-// const fs = require('fs');
-// const app = require('express')();
-// var json2xls = require('json2xls');
-// const excelFileName = 'sample.xlsx';
 const fs = require('fs');
 const path = require('path');
 let xlsx = require("xlsx");
-// const { dirname } = require("path/posix");
 const pdfkit = require('pdfkit');
+let mainCity = "New Delhi";//change this
+let firstNearCity = "Gurgaon" //change this
+let secondNearCity = "Faridabad"; //change this
+let bloodGroup = "O+"; ////change this
 let page;
-let mainCity = "New Delhi";
-let firstNearCity = "Gurgaon"
-let secondNearCity = "Faridabad";
-let bloodGroup = "O+";
 let FolderNAME = (mainCity+"_"+firstNearCity+"_"+secondNearCity);
 (async function fn() {
+    console.log("Please wait while we initiate the search!!");
     let browser = await puppeteer.launch({
         headless: false, defaultViewport: null,
         args: ["--start-maximized"],
     })
     page = await browser.newPage();
+    console.log("Search Initiated");
     await page.goto("http://blooddonors.in/search.php");
     await page.waitForSelector('body > div.container > div:nth-child(1) > form > div.col-md-4 > select');
     await page.click('body > div.container > div:nth-child(1) > form > div.col-md-4 > select');
@@ -46,7 +42,7 @@ let FolderNAME = (mainCity+"_"+firstNearCity+"_"+secondNearCity);
         }
         await page.click('body > div.container > div:nth-child(1) > form > div:nth-child(4) > select');
         console.log("Getting info");
-        await page.waitForTimeout(500);
+        // await page.waitForTimeout(500);
         for (let i = 0; i < bloodGroup.length; i++) {
             await page.keyboard.press(bloodGroup[i]);
         }
@@ -63,11 +59,11 @@ let FolderNAME = (mainCity+"_"+firstNearCity+"_"+secondNearCity);
 
         for (let i = 1; i <= rowList.length; i++) {
             let name = await page.$eval("body > div.container > div:nth-child(3) > div:nth-child(" + i + ") > div > div:nth-child(1)", el => el.textContent);
-            nameArr.push(name);
+            arrayPusher(nameArr,name);
             let bgp = await page.$eval("body > div.container > div:nth-child(3) > div:nth-child(" + i + ") > div > div.col-md-1", el => el.textContent);
-            bloodGroupArr.push(bgp);
+            arrayPusher(bloodGroupArr,bgp);
             let place = await page.$eval("body > div.container > div:nth-child(3) > div:nth-child(" + i + ") > div > div:nth-child(3)", el => el.textContent);
-            placeArr.push(place);
+            arrayPusher(placeArr,place);
             let firstNumber = await page.$eval("body > div.container > div:nth-child(3) > div:nth-child(" + i + ") > div > div.col-md-2", el => el.textContent);
             if (firstNumber == "") {
                 firstNumberArr.push("NA");
@@ -75,11 +71,7 @@ let FolderNAME = (mainCity+"_"+firstNearCity+"_"+secondNearCity);
                 firstNumberArr.push(firstNumber);
             }
             let secondNumber = await page.$eval("body > div.container > div:nth-child(3) > div:nth-child(" + i + ") > div > div:nth-child(5)", el => el.textContent);
-            if (secondNumber == "") {
-                secondNumberArr.push("NA");
-            } else {
-                secondNumberArr.push(firstNumber);
-            }
+            arrayPusher(secondNumberArr,secondNumber);
             await page.waitForTimeout(500)
             //     console.log("Waiting");
             // await page.waitForTimeout(2000);
@@ -90,10 +82,6 @@ let FolderNAME = (mainCity+"_"+firstNearCity+"_"+secondNearCity);
         console.log(`${nameArr[i]}  ${bloodGroupArr[i]}  ${placeArr[i]}  ${firstNumberArr[i]}   ${secondNumberArr[i]}`)
         
         }
-        // console.table(placeArr);
-        
-        // let aoa = [];
-        
         let a=[];
         for (let j = 0; j < nameArr.length; j++) {
             let aoa = { "Name": '', "Blood Group": '', "Location": '', "Mobile Number": '', "Alternate Number": ''};
@@ -115,11 +103,12 @@ let FolderNAME = (mainCity+"_"+firstNearCity+"_"+secondNearCity);
         fs.writeFile(filePath, JSON.stringify(a), err => err ? console.log(err): null);
         let excelFilePath = path.join(folderpath, FolderNAME+".xlsx");
         excelWriter(excelFilePath,a,mainCity);
-        // let text = JSON.stringify(aoa);
-        // let pdfDoc = new pdfkit();
-        // pdfDoc.pipe(fs.createWriteStream(filePath));
-        // pdfDoc.text(text);
-        // pdfDoc.end();
+        let text = JSON.stringify(a);
+        let pdfDoc = new pdfkit();
+        let pdfFilePath = path.join(folderpath,FolderNAME+".pdf");
+        pdfDoc.pipe(fs.createWriteStream(pdfFilePath));
+        pdfDoc.text(text);
+        pdfDoc.end();
         //convert.js
         console.log("Please find the file in "+FolderNAME+" folder");
         await browser.close();
@@ -137,4 +126,12 @@ function excelWriter(filePath, json, sheetName) {
     xlsx.utils.book_append_sheet(newWB, newWS, sheetName);
     // excel file create 
     xlsx.writeFile(newWB, filePath);
+}
+function arrayPusher(arr,n){
+    if(n==""){
+        arr.push("NA");
+    }
+    else{
+        arr.push(n);
+    }
 }
